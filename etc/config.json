@@ -1,0 +1,16 @@
+{
+  "servers": [
+    {
+      "name": "Server 1",
+      "url": "http://localhost:8080/datacsv"
+    },
+    {
+      "name": "Server 2",
+      "url": "http://localhost:8080/datacsv"
+    },
+    {
+      "name": "Server 3",
+      "url": "http://localhost:8080/datacsv"
+    }
+  ]
+}

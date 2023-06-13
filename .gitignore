@@ -1,0 +1,8 @@
+# Ignore all CSV files
+*.csv
+
+# Ignore all config files
+*.config
+*.conf
+*.cfg
+*.ini
