@@ -26,7 +26,10 @@ func autoDownloadCSV() {
 
 			time.Sleep(downloadTime.Sub(time.Now()))
 
-			filename := fmt.Sprintf("downloaded_%d.csv", time.Now().UnixNano())
+			currentTime := time.Now()
+			formattedTime := currentTime.Format("02_01_2006")
+
+			filename := fmt.Sprintf("downloaded_server%d_%v.csv", serverNumber, formattedTime)
 
 			err := DownloadCSV(u, filename)
 			if err != nil {
