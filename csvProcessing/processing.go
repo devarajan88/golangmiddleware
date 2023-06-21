@@ -1,29 +1,13 @@
 package csvprocessing
 
 import (
-	"encoding/csv"
 	"fmt"
-	"io"
-	"os"
+	"maccsv/csv"
 	"time"
 )
 
-func getNewPhonesRegistered(filename string) int {
-	file, err := os.Open(filename)
-	if err != nil {
-		fmt.Printf("Error opening file: %v\n", err)
-		return 0
-	}
-	defer file.Close()
-
-	reader := csv.NewReader(file)
-	reader.TrimLeadingSpace = true
-
-	columnNames, err := reader.Read()
-	if err != nil {
-		fmt.Printf("Error reading column names: %v\n", err)
-		return 0
-	}
+func GetNewPhonesRegistered(iterator csv.RowIterator, lastDownloadTime time.Time) []string {
+	columnNames := iterator.Get()
 
 	registeredColumnIndex := -1
 	for i, columnName := range columnNames {
@@ -35,20 +19,13 @@ func getNewPhonesRegistered(filename string) int {
 
 	if registeredColumnIndex == -1 {
 		fmt.Println("Error: 'Registered' column not found")
-		return 0
+		return nil
 	}
 
-	newPhonesRegistered := 0
-	for {
-		row, err := reader.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			fmt.Printf("Error reading row: %v\n", err)
-			break
-		}
+	newPhonesRegistered := []string{}
 
+	for iterator.Next() {
+		row := iterator.Get()
 		if len(row) > registeredColumnIndex && row[registeredColumnIndex] != "" {
 			registrationTime, err := time.Parse("2006-01-02", row[registeredColumnIndex])
 			if err != nil {
@@ -57,7 +34,7 @@ func getNewPhonesRegistered(filename string) int {
 			}
 
 			if registrationTime.After(lastDownloadTime) {
-				newPhonesRegistered++
+				newPhonesRegistered = append(newPhonesRegistered, row[registeredColumnIndex])
 			}
 		}
 	}

@@ -2,18 +2,14 @@ package csv
 
 import (
 	"encoding/csv"
-	"errors"
-	"os"
-	"reflect"
+	"fmt"
+	"strings"
 )
 
-// CSV represents the implementation of the CSV contract.
 type CSV struct {
-	filename string
-	records  []CSVRow
+	Records []CSVRow
 }
 
-// CSVRow represents a single row in the CSV file.
 type CSVRow struct {
 	Company          string `csv:"Company"`
 	Person           string `csv:"Person"`
@@ -38,158 +34,174 @@ type RowIterator struct {
 	position int
 }
 
-func NewCSV(filename string) (*CSV, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
+/*
+	function for object creation from string
 
-	reader := csv.NewReader(file)
-	records, err := reader.ReadAll()
-	if err != nil {
-		return nil, err
-	}
+need to add handling of extre double quotes in csv file.
+*/
+func New(csvString string) (*CSV, error) {
+	reader := csv.NewReader(strings.NewReader(csvString))
+	reader.TrimLeadingSpace = true
+	reader.LazyQuotes = true
+	reader.ReuseRecord = true
 
+	// Read the header row
+	// _, err := reader.Read()
+	// if err != nil {
+	// 	fmt.Println("error is coming here")
+	// 	return nil, err
+	// }
+
+	// Read the remaining rows
 	var csvRows []CSVRow
-	for _, record := range records {
-		csvRow := CSVRow{}
-		err := csvRow.Unmarshal(record)
+	for {
+		row, err := reader.Read()
 		if err != nil {
-			// Handle error
+			if err.Error() == "EOF" {
+				break
+			}
+			fmt.Println("error is coming here inner")
+			return nil, err
+		}
+
+		// Handle double quotes in fields
+		// for i := range row {
+		// 	row[i] = strings.Trim(row[i], ` "`)
+		// }
+
+		csvRow := CSVRow{
+			Company:          row[0],
+			Person:           row[1],
+			Name:             row[2],
+			DeviceType:       row[3],
+			MACAddress:       row[4],
+			Registered:       row[5],
+			Status:           row[6],
+			UUIDCreationDate: row[7],
+			DownloadDate:     row[8],
+			HotDesking:       row[9],
+			HotDeskingID:     row[10],
+			HotDeskingPhone:  row[11],
+			Location:         row[12],
+			Group:            row[13],
+			Comment:          row[14],
+			Firmware:         row[15],
 		}
 		csvRows = append(csvRows, csvRow)
 	}
 
-	return &CSV{
-		filename: filename,
-		records:  csvRows,
-	}, nil
-}
-
-func (c *CSV) RowIterator(pos int) RowIterator {
-	if pos < 0 || pos >= len(c.records) {
-		pos = 0
+	csvObj := &CSV{
+		Records: csvRows,
 	}
 
-	return RowIterator{
+	return csvObj, nil
+}
+
+// Implementing CSVContract methods
+
+func (c *CSV) RowIterator(pos int) RowIteratorContract {
+	return &RowIterator{
 		csvFile:  c,
 		position: pos,
 	}
 }
 
-func (c *CSV) Incorporate(other *CSV) {
-	columns := c.getColumnNames()
-	otherColumns := other.getColumnNames()
-
-	for _, colName := range otherColumns {
-		if !contains(columns, colName) {
-			columns = append(columns, colName)
-		}
-	}
-
-	for _, otherRow := range other.records {
-		row := CSVRow{}
-		rowValues := make([]string, 0, len(columns))
-
-		for _, colName := range columns {
-			colValue := reflect.ValueOf(otherRow).FieldByName(colName).String()
-			rowValues = append(rowValues, colValue)
-		}
-
-		err := row.Unmarshal(rowValues)
-		if err != nil {
-			// Handle error
-		}
-
-		c.records = append(c.records, row)
-	}
+func (c *CSV) Incorporate(other CSV) {
+	c.Records = append(c.Records, other.Records...)
 }
 
 func (c *CSV) ToStringRFC4180() string {
-	output := ""
-	writer := csv.NewWriter(os.Stdout)
+	var result string
 
-	for _, row := range c.records {
-		rowValues := row.Marshal()
-		writer.Write(rowValues)
+	// Write the header row
+	header := []string{
+		"Company",
+		"Person",
+		"Name",
+		"Device type",
+		"MAC address",
+		"Registered",
+		"Status",
+		"UUID creation date",
+		"Download date",
+		"Hot desking",
+		"Hot desking ID",
+		"Hot desking phone",
+		"Location",
+		"Group",
+		"Comment",
+		"Firmware",
+	}
+	result += strings.Join(header, ",") + "\n"
+
+	// Write the data rows
+	for _, row := range c.Records {
+		data := []string{
+			row.Company,
+			row.Person,
+			row.Name,
+			row.DeviceType,
+			row.MACAddress,
+			row.Registered,
+			row.Status,
+			row.UUIDCreationDate,
+			row.DownloadDate,
+			row.HotDesking,
+			row.HotDeskingID,
+			row.HotDeskingPhone,
+			row.Location,
+			row.Group,
+			row.Comment,
+			row.Firmware,
+		}
+		result += strings.Join(data, ",") + "\n"
 	}
 
-	writer.Flush()
-	if err := writer.Error(); err != nil {
-		// Handle error
-	}
-
-	return output
+	return result
 }
 
-func (r *RowIterator) Get() *CSVRow {
-	if r.position >= len(r.csvFile.records) {
+// Implementing RowIteratorContract methods
+
+func (it *RowIterator) Get() []string {
+	// if it.position >= len(it.csvFile.Records) {
+	// 	return nil
+	// }
+
+	fmt.Println("================")
+	fmt.Println("CSV records len")
+	fmt.Println(len(it.csvFile.Records))
+	fmt.Println("csv iterator pos")
+	fmt.Println(it.position)
+	fmt.Println("================")
+
+	if it.position >= len(it.csvFile.Records) {
 		return nil
 	}
-
-	return &r.csvFile.records[r.position]
+	return []string{
+		it.csvFile.Records[it.position].Company,
+		it.csvFile.Records[it.position].Person,
+		it.csvFile.Records[it.position].Name,
+		it.csvFile.Records[it.position].DeviceType,
+		it.csvFile.Records[it.position].MACAddress,
+		it.csvFile.Records[it.position].Registered,
+		it.csvFile.Records[it.position].Status,
+		it.csvFile.Records[it.position].UUIDCreationDate,
+		it.csvFile.Records[it.position].DownloadDate,
+		it.csvFile.Records[it.position].HotDesking,
+		it.csvFile.Records[it.position].HotDeskingID,
+		it.csvFile.Records[it.position].HotDeskingPhone,
+		it.csvFile.Records[it.position].Location,
+		it.csvFile.Records[it.position].Group,
+		it.csvFile.Records[it.position].Comment,
+		it.csvFile.Records[it.position].Firmware,
+	}
 }
 
-func (r *RowIterator) Next() bool {
-	r.position++
-	return r.position < len(r.csvFile.records)
+func (it *RowIterator) Next() bool {
+	it.position++
+	fmt.Println(it.position)
+	return it.position < len(it.csvFile.Records)
 }
-
-func (r *RowIterator) Pos() int {
-	return r.position
-}
-
-func (c *CSV) getColumnNames() []string {
-	if len(c.records) == 0 {
-		return nil
-	}
-
-	csvRow := c.records[0]
-	columns := make([]string, 0, len(csvRow))
-
-	t := reflect.TypeOf(csvRow)
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		tag := field.Tag.Get("csv")
-		columns = append(columns, tag)
-	}
-
-	return columns
-}
-
-func contains(slice []string, value string) bool {
-	for _, item := range slice {
-		if item == value {
-			return true
-		}
-	}
-	return false
-}
-
-func (r *CSVRow) Unmarshal(values []string) error {
-	if len(values) != reflect.TypeOf(*r).NumField() {
-		return errors.New("csv: number of values does not match number of fields")
-	}
-
-	for i := 0; i < len(values); i++ {
-		field := reflect.ValueOf(r).Elem().Field(i)
-		if field.IsValid() && field.CanSet() {
-			field.SetString(values[i])
-		}
-	}
-
-	return nil
-}
-
--func (r *CSVRow) Marshal() []string {
-	t := reflect.TypeOf(*r)
-	values := make([]string, t.NumField())
-
-	for i := 0; i < t.NumField(); i++ {
-		field := reflect.ValueOf(*r).Field(i)
-		values[i] = field.String()
-	}
-
-	return values
+func (it *RowIterator) Pos() int {
+	return it.position
 }

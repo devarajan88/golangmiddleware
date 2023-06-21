@@ -2,15 +2,15 @@
   "servers": [
     {
       "name": "Server 1",
-      "url": "http://localhost:8080/datacsv"
+      "url": "https://exportdev:repDEV2023!@my.callmanager.tel/portlet/export/voip/autoconfigDeviceList.csv?lang=en_GB"
     },
     {
       "name": "Server 2",
-      "url": "http://localhost:8080/datacsv"
+      "url": "https://exportdev:repDEV2023!@my.callmanager.tel/portlet/export/voip/autoconfigDeviceList.csv?lang=en_GB"
     },
     {
       "name": "Server 3",
-      "url": "http://localhost:8080/datacsv"
+      "url": "https://exportdev:repDEV2023!@my.callmanager.tel/portlet/export/voip/autoconfigDeviceList.csv?lang=en_GB"
     }
   ]
 }
