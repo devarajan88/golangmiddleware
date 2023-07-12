@@ -7,6 +7,6 @@ import (
 func main() {
 
 	util.ConfigReader()
-	autoDownloadCSV()
+	util.AutoDownloadCSV()
 
 }

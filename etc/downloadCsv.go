@@ -1,12 +1,11 @@
-package main
+package util
 
 import (
 	csvOriginal "encoding/csv"
 	"fmt"
 	"io"
 	"maccsv/csv"
-	csvPro "maccsv/csvprocessing"
-	util "maccsv/etc"
+	csvMod "maccsv/csvprocessing"
 	"net/http"
 	"os"
 	"strings"
@@ -16,7 +15,7 @@ import (
 
 var lastDownloadTime time.Time
 
-func autoDownloadCSV() {
+func AutoDownloadCSV() {
 
 	downloadTime := time.Now().Add(5 * time.Second)
 	// Currently for testing it is hard coded
@@ -24,7 +23,7 @@ func autoDownloadCSV() {
 
 	var wg sync.WaitGroup
 
-	multiServer := util.ReadMultiServerConfig()
+	multiServer := ReadMultiServerConfig()
 
 	for serverNumber, url := range *multiServer {
 
@@ -53,12 +52,12 @@ func autoDownloadCSV() {
 			// Create a new CSV object
 			csvObj, err := csv.New(csvString)
 			if err != nil {
-				fmt.Println("Error:", err)
+				fmt.Println("Error is it:", err)
 				return
 			}
 
 			iterator := csvObj.RowIterator(0)
-			newPhones := csvPro.GetNewPhonesRegistered(iterator, lastDownloadTime)
+			newPhones := csvMod.GetNewPhonesRegistered(iterator, lastDownloadTime)
 			fmt.Println(newPhones)
 
 		}(url, serverNumber)
@@ -94,37 +93,32 @@ func DownloadCSV(url, filename string) error {
 }
 
 func LoadCSVAsString(filename string) (string, error) {
+	// Open the CSV file.
 	file, err := os.Open(filename)
 	if err != nil {
-		fmt.Println("File reading error")
 		return "", err
 	}
 	defer file.Close()
 
+	// Create a reader for the CSV file.
 	reader := csvOriginal.NewReader(file)
-	reader.TrimLeadingSpace = true
 
-	reader.LazyQuotes = true
-	reader.ReuseRecord = true
-
-	var lines []string
+	// Read the CSV file into a string.
+	var csvData string
 	for {
-		row, err := reader.Read()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			fmt.Println("Error reading CSV file")
-			return "", err
+		line, err := reader.Read()
+		if err == io.EOF {
+			break
 		}
 
-		for i := range row {
-			row[i] = strings.Trim(row[i], ` "`)
+		// Remove newlines from quoted fields
+		for i, field := range line {
+			field = strings.ReplaceAll(field, "\n", " ")
+			line[i] = field
 		}
 
-		line := strings.Join(row, ",")
-		lines = append(lines, line)
+		csvData += fmt.Sprintf("%s\n", strings.Join(line, ","))
 	}
 
-	return strings.Join(lines, "\n"), nil
+	return csvData, nil
 }

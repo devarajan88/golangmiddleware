@@ -53,5 +53,6 @@ func ReadMultiServerConfig() *[]string {
 		}
 
 	}
+	fmt.Println("DKKK serverList", serverList)
 	return &serverList
 }
